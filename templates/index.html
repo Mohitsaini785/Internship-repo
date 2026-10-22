@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VisionPulse AI | Intelligent Image Recognition & Object Classification</title>
+    <meta name="description" content="State-of-the-art Image Recognition Web App powered by TensorFlow, Keras, OpenCV, and Flask with real-time inference, Grad-CAM attention heatmaps, and computer vision diagnostics.">
+    <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="background-glow top-left"></div>
+    <div class="background-glow bottom-right"></div>
+    <div class="grid-overlay"></div>
+
+    <div class="app-container">
+        <!-- Top Navigation -->
+        <header class="navbar glass-panel">
+            <div class="brand">
+                <div class="brand-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
+                        <circle cx="12" cy="12" r="3"/>
+                        <circle cx="12" cy="12" r="8" stroke-dasharray="2 3"/>
+                    </svg>
+                </div>
+                <div class="brand-text">
+                    <h1>VisionPulse <span class="accent-badge">AI</span></h1>
+                    <p class="tagline">Neural Object Recognition & Computer Vision Suite</p>
+                </div>
+            </div>
+
+            <div class="nav-controls">
+                <div class="model-select-wrap">
+                    <label for="modelSelect">
+                        <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect width="18" height="18" x="3" y="3" rx="2"/>
+                            <path d="m9 9 6 6m0-6-6 6"/>
+                        </svg>
+                        Architecture:
+                    </label>
+                    <select id="modelSelect" class="styled-select">
+                        <option value="mobilenet_v2" selected>MobileNetV2 (Ultra-Fast · Edge)</option>
+                        <option value="resnet50">ResNet-50 (Deep Residual · High Precision)</option>
+                    </select>
+                </div>
+
+                <button type="button" class="btn btn-secondary btn-header-classes" id="exploreClassesBtn">
+                    <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="m21 21-4.3-4.3"/>
+                        <circle cx="11" cy="11" r="8"/>
+                    </svg>
+                    Explore 1,000 Classes
+                </button>
+
+                <div class="status-pill ready" id="systemStatus">
+                    <span class="status-dot"></span>
+                    <span class="status-text">TensorFlow & OpenCV Ready</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Workspace Grid -->
+        <main class="main-layout">
+            <!-- Left Column: Input and Vision Filters -->
+            <section class="panel-column left-pane">
+                <!-- Source Tabs -->
+                <div class="tab-group glass-panel">
+                    <button class="tab-btn active" data-tab="upload" id="tabUpload">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="17 8 12 3 7 8"/>
+                            <line x1="12" x2="12" y1="3" y2="15"/>
+                        </svg>
+                        Upload Image
+                    </button>
+                    <button class="tab-btn" data-tab="camera" id="tabCamera">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/>
+                            <circle cx="12" cy="13" r="3"/>
+                        </svg>
+                        Webcam Live
+                    </button>
+                    <button class="tab-btn" data-tab="samples" id="tabSamples">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/>
+                            <circle cx="9" cy="9" r="2"/>
+                            <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
+                        </svg>
+                        Sample Gallery
+                    </button>
+                </div>
+
+                <!-- Input Containers -->
+                <div class="input-card glass-panel">
+                    <!-- Tab 1: Upload Dropzone -->
+                    <div class="tab-content active" id="contentUpload">
+                        <div class="dropzone" id="dropzone">
+                            <input type="file" id="fileInput" accept="image/png, image/jpeg, image/webp, image/bmp" hidden>
+                            <div class="dropzone-content" id="dropzonePrompt">
+                                <div class="upload-icon-circle">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                        <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/>
+                                        <path d="M12 12v9"/>
+                                        <path d="m16 16-4-4-4 4"/>
+                                    </svg>
+                                </div>
+                                <h3>Drop your image here</h3>
+                                <p>Supports PNG, JPG, WEBP, BMP up to 16MB</p>
+                                <button type="button" class="btn btn-secondary" id="browseBtn">
+                                    Browse Computer
+                                </button>
+                            </div>
+
+                            <div class="preview-area" id="previewArea" style="display: none;">
+                                <img id="imagePreview" alt="Input Preview" src="" />
+                                <button type="button" class="btn-icon remove-btn" id="clearPreviewBtn" title="Remove image">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <line x1="18" y1="6" x2="6" y2="18"/>
+                                        <line x1="6" y1="6" x2="18" y2="18"/>
+                                    </svg>
+                                </button>
+                                <div class="preview-meta-badge" id="previewFilename">image.jpg</div>
+                                <button type="button" class="btn btn-primary preview-quick-classify" id="quickClassifyBtn">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px;">
+                                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                                    </svg>
+                                    Classify Now
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab 2: Live Webcam -->
+                    <div class="tab-content" id="contentCamera">
+                        <div class="camera-wrapper">
+                            <video id="webcamVideo" autoplay playsinline muted></video>
+                            <canvas id="webcamCanvas" style="display: none;"></canvas>
+                            <div class="camera-hud-overlay">
+                                <div class="hud-reticle"></div>
+                                <div class="hud-corners">
+                                    <span></span><span></span><span></span><span></span>
+                                </div>
+                            </div>
+                            <div class="camera-actions">
+                                <button type="button" class="btn btn-primary" id="startCamBtn">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polygon points="5 3 19 12 5 21 5 3"/>
+                                    </svg>
+                                    Enable Camera
+                                </button>
+                                <button type="button" class="btn btn-accent" id="captureCamBtn" style="display: none;">
+                                    <span class="shutter-circle"></span>
+                                    Snap Photo
+                                </button>
+                                <button type="button" class="btn btn-secondary" id="stopCamBtn" style="display: none;">
+                                    Close Camera
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab 3: Sample Images Gallery -->
+                    <div class="tab-content" id="contentSamples">
+                        <p class="section-hint">Click any benchmark image to classify immediately:</p>
+                        <div class="sample-grid" id="sampleGrid">
+                            <div class="sample-card" data-sample="golden_retriever">
+                                <img src="/static/samples/golden_retriever.jpg" alt="Golden Retriever" loading="lazy">
+                                <div class="sample-info">
+                                    <span class="sample-name">Golden Retriever</span>
+                                    <span class="sample-cat">Canines</span>
+                                </div>
+                            </div>
+                            <div class="sample-card" data-sample="sports_car">
+                                <img src="/static/samples/sports_car.jpg" alt="Sports Car" loading="lazy">
+                                <div class="sample-info">
+                                    <span class="sample-name">Sports Car</span>
+                                    <span class="sample-cat">Vehicles</span>
+                                </div>
+                            </div>
+                            <div class="sample-card" data-sample="monarch_butterfly">
+                                <img src="/static/samples/monarch_butterfly.jpg" alt="Monarch Butterfly" loading="lazy">
+                                <div class="sample-info">
+                                    <span class="sample-name">Monarch Butterfly</span>
+                                    <span class="sample-cat">Insects</span>
+                                </div>
+                            </div>
+                            <div class="sample-card" data-sample="coffee_cup">
+                                <img src="/static/samples/coffee_cup.jpg" alt="Coffee Cup" loading="lazy">
+                                <div class="sample-info">
+                                    <span class="sample-name">Coffee Cup</span>
+                                    <span class="sample-cat">Food & Drink</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- OpenCV Image Enhancement Options -->
+                <div class="card glass-panel cv-filter-panel">
+                    <div class="card-header">
+                        <div class="header-title">
+                            <svg class="icon-sm text-cyan" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48 2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48 2.83-2.83"/>
+                            </svg>
+                            <h3>OpenCV Preprocessing Pipeline</h3>
+                        </div>
+                        <span class="badge-mini">Hardware Accelerated</span>
+                    </div>
+
+                    <div class="filter-toggles">
+                        <label class="toggle-control">
+                            <input type="checkbox" id="toggleClahe">
+                            <span class="toggle-switch"></span>
+                            <span class="toggle-label">
+                                <strong>CLAHE Enhancement</strong>
+                                <small>Adaptive Local Contrast Equalization</small>
+                            </span>
+                        </label>
+
+                        <label class="toggle-control">
+                            <input type="checkbox" id="toggleSharpen">
+                            <span class="toggle-switch"></span>
+                            <span class="toggle-label">
+                                <strong>Unsharp Mask</strong>
+                                <small>Enhance object micro-edges and borders</small>
+                            </span>
+                        </label>
+
+                        <label class="toggle-control">
+                            <input type="checkbox" id="toggleDenoise">
+                            <span class="toggle-switch"></span>
+                            <span class="toggle-label">
+                                <strong>Bilateral Denoise</strong>
+                                <small>Reduce sensor grain while preserving boundaries</small>
+                            </span>
+                        </label>
+                    </div>
+
+                    <div class="action-footer">
+                        <button type="button" class="btn btn-primary btn-block" id="classifyBtn" disabled>
+                            <svg class="spinner" id="btnSpinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: none;">
+                                <circle cx="12" cy="12" r="10" stroke-dasharray="32" stroke-linecap="round"/>
+                            </svg>
+                            <svg class="btn-icon-svg" id="btnIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                            </svg>
+                            <span id="btnText">Classify & Analyze Image</span>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Right Column: Recognition & Computer Vision Diagnostics -->
+            <section class="panel-column right-pane">
+                <!-- Idle Placeholder State -->
+                <div class="empty-state glass-panel" id="emptyState">
+                    <div class="empty-state-visual">
+                        <div class="radar-scan"></div>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <circle cx="12" cy="12" r="10"/>
+                            <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/>
+                            <path d="M2 12h20"/>
+                        </svg>
+                    </div>
+                    <h2>Awaiting Image Input</h2>
+                    <p>Upload a photo, snap via webcam, or choose one of the benchmark samples on the left to start real-time neural inference and OpenCV diagnostics.</p>
+                    <div class="features-list">
+                        <span class="feature-tag">⚡ ~20ms Latency</span>
+                        <span class="feature-tag">🎯 1,000 ImageNet Classes</span>
+                        <span class="feature-tag">🔥 Grad-CAM Heatmaps</span>
+                        <span class="feature-tag">👁️ Canny Wireframes</span>
+                    </div>
+                </div>
+
+                <!-- Active Classification Results (Hidden until classified) -->
+                <div class="results-container" id="resultsContainer" style="display: none;">
+                    <!-- Top Recognized Card -->
+                    <div class="spotlight-card glass-panel">
+                        <div class="spotlight-header">
+                            <div>
+                                <span class="spotlight-eyebrow">Top Predicted Object</span>
+                                <h2 class="spotlight-title" id="topLabel">Golden Retriever</h2>
+                                <span class="spotlight-id" id="topClassId">n02099712</span>
+                            </div>
+                            <div class="confidence-circle" id="confidenceBadge">
+                                <div class="confidence-val" id="topConfidence">98.4%</div>
+                                <div class="confidence-label">Confidence</div>
+                            </div>
+                        </div>
+
+                        <!-- Quick Metadata Strip -->
+                        <div class="meta-strip" id="metaStrip">
+                            <div class="meta-item">
+                                <span class="meta-k">Latency</span>
+                                <span class="meta-v" id="metaLatency">28 ms</span>
+                            </div>
+                            <div class="meta-item">
+                                <span class="meta-k">Resolution</span>
+                                <span class="meta-v" id="metaResolution">1024 × 1024</span>
+                            </div>
+                            <div class="meta-item">
+                                <span class="meta-k">Aspect Ratio</span>
+                                <span class="meta-v" id="metaAspect">1:1</span>
+                            </div>
+                            <div class="meta-item">
+                                <span class="meta-k">Brightness</span>
+                                <span class="meta-v" id="metaBrightness">138.4</span>
+                            </div>
+                            <div class="meta-item">
+                                <span class="meta-k">File Size</span>
+                                <span class="meta-v" id="metaSize">796 KB</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Top-5 Probability Rankings -->
+                    <div class="card glass-panel">
+                        <div class="card-header">
+                            <div class="header-title">
+                                <svg class="icon-sm text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="18" y1="20" x2="18" y2="10"/>
+                                    <line x1="12" y1="20" x2="12" y2="4"/>
+                                    <line x1="6" y1="20" x2="6" y2="14"/>
+                                </svg>
+                                <h3>Top-5 Softmax Distribution</h3>
+                            </div>
+                            <button type="button" class="btn-link" id="copyResultsBtn" title="Copy report to clipboard">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/>
+                                    <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
+                                </svg>
+                                <span>Copy Report</span>
+                            </button>
+                        </div>
+                        <div class="rankings-list" id="rankingsList">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Multi-view Computer Vision Diagnostics -->
+                    <div class="card glass-panel">
+                        <div class="card-header diagnostic-header">
+                            <div class="header-title">
+                                <svg class="icon-sm text-cyan" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+                                    <polyline points="2 17 12 22 22 17"/>
+                                    <polyline points="2 12 12 17 22 12"/>
+                                </svg>
+                                <h3>Vision Analytics & Diagnostics</h3>
+                            </div>
+                            <!-- Diagnostic Sub-tabs -->
+                            <div class="sub-tab-group" id="diagTabGroup">
+                                <button class="sub-tab active" data-diag="gradcam">Grad-CAM Heatmap</button>
+                                <button class="sub-tab" data-diag="edges">Canny Edges</button>
+                                <button class="sub-tab" data-diag="contours">Contours & ROI</button>
+                                <button class="sub-tab" data-diag="histogram">Color Histogram</button>
+                                <button class="sub-tab" data-diag="processed">Preprocessed</button>
+                            </div>
+                        </div>
+
+                        <!-- Diagnostic Viewport -->
+                        <div class="diagnostic-viewport">
+                            <div class="viewport-canvas-wrap">
+                                <img id="diagImage" src="" alt="Diagnostic View" />
+                                <div class="diag-legend" id="diagLegend">
+                                    <span class="legend-dot"></span>
+                                    <span id="diagLegendText">Grad-CAM: Warmer colors indicate image pixels heavily weighted by CNN filters</span>
+                                </div>
+                            </div>
+                            <!-- Detected regions list (for Contours tab) -->
+                            <div class="roi-summary" id="roiSummary" style="display: none;">
+                                <div class="roi-summary-header">Detected Regions of Interest (ROI):</div>
+                                <div class="roi-tags" id="roiTags"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="app-footer">
+            <p>VisionPulse Image Recognition System · Powered by <strong>Python, TensorFlow/Keras, OpenCV & Flask</strong></p>
+        </footer>
+    </div>
+
+    <!-- 1,000 Classes Directory Modal -->
+    <div class="modal-backdrop" id="classesModal" style="display: none;">
+        <div class="modal-dialog glass-panel">
+            <div class="modal-header">
+                <div>
+                    <h2>ImageNet Recognizable Classes (1,000 Categories)</h2>
+                    <p class="modal-subtitle">Search any object to verify if the pre-trained neural network can identify it:</p>
+                </div>
+                <button type="button" class="btn-icon remove-btn modal-close-btn" id="closeClassesModalBtn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-search-wrap">
+                <input type="text" id="classesSearchInput" class="modal-search-input" placeholder="Search by name (e.g. phone, dog, car, cup, cat, watch)...">
+                <span class="search-count" id="searchMatchCount">1,000 classes</span>
+            </div>
+            <div class="classes-pills-list" id="classesPillsList">
+                <!-- Dynamically populated -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div class="toast" id="toast"></div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

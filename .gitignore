@@ -1,0 +1,26 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Large Model Weights (if trained locally)
+*.keras
+*.h5
+*.tflite
+
+# Virtual Environments
+.venv/
+env/
+venv/
+ENV/
+
+# Temporary uploads (keep sample benchmarks)
+static/uploads/*
+!static/uploads/.gitkeep
+
+# Operating System files
+Thumbs.db
+.DS_Store
+
+# IDE specific paths (optional local settings)
+.idea/
